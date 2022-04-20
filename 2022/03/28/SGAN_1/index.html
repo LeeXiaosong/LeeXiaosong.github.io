@@ -1,0 +1,284 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Social-GAN 代码解析（一） | 宿松</title><meta name="keywords" content="Deep Learning,GAN"><meta name="author" content="Leon"><meta name="copyright" content="Leon"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="持续更新中… 近日在实验室复现18年李飞飞组的行人轨迹预测论文Social-GAN，Social GAN: Socially Acceptable Trajectories with Generative Adversarial Networks(CVPR,2018)。作为轨迹预测领域的一开山之作，至今引用已超1000次，即使放到2022年其思想和代码也有很多值得借鉴的地方。网上对于该文献及官方源">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Social-GAN 代码解析（一）">
+<meta property="og:url" content="http://example.com/2022/03/28/SGAN_1/index.html">
+<meta property="og:site_name" content="宿松">
+<meta property="og:description" content="持续更新中… 近日在实验室复现18年李飞飞组的行人轨迹预测论文Social-GAN，Social GAN: Socially Acceptable Trajectories with Generative Adversarial Networks(CVPR,2018)。作为轨迹预测领域的一开山之作，至今引用已超1000次，即使放到2022年其思想和代码也有很多值得借鉴的地方。网上对于该文献及官方源">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/blogtopimg/SGAN.png">
+<meta property="article:published_time" content="2022-03-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-03-31T16:00:00.000Z">
+<meta property="article:author" content="Leon">
+<meta property="article:tag" content="Deep Learning">
+<meta property="article:tag" content="GAN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/blogtopimg/SGAN.png"><link rel="shortcut icon" href="/img/star.png"><link rel="canonical" href="http://example.com/2022/03/28/SGAN_1/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: true,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Social-GAN 代码解析（一）',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-04-01 00:00:00'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/background.css"><meta name="generator" content="Hexo 6.1.0"></head><body><div id="web_bg"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/me.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/blogtopimg/SGAN.png')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">宿松</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Social-GAN 代码解析（一）</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-03-27T16:00:00.000Z" title="发表于 2022-03-28 00:00:00">2022-03-28</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2022-03-31T16:00:00.000Z" title="更新于 2022-04-01 00:00:00">2022-04-01</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Social-GAN 代码解析（一）"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/2022/03/28/SGAN_1/#post-comment" itemprop="discussionUrl"><span class="valine-comment-count" data-xid="/2022/03/28/SGAN_1/" itemprop="commentCount"></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>持续更新中…</p>
+<p>近日在实验室复现18年李飞飞组的行人轨迹预测论文Social-GAN，Social GAN: Socially Acceptable Trajectories with Generative Adversarial Networks(CVPR,2018)。<br>作为轨迹预测领域的一开山之作，至今引用已超1000次，即使放到2022年其思想和代码也有很多值得借鉴的地方。<br>网上对于该文献及官方源码的解读颇多，为了巩固，也作此博文记录一番。</p>
+<h1 id="数据集准备"><a href="#数据集准备" class="headerlink" title="数据集准备"></a>数据集准备</h1><h2 id="下载问题"><a href="#下载问题" class="headerlink" title="下载问题"></a>下载问题</h2><h2 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h2><h2 id="ETH和UCY数据集"><a href="#ETH和UCY数据集" class="headerlink" title="ETH和UCY数据集"></a>ETH和UCY数据集</h2><p>数据集链接: <a target="_blank" rel="noopener" href="https://data.vision.ee.ethz.ch/cvl/aess/">https://data.vision.ee.ethz.ch/cvl/aess/</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/T_C_Ko/article/details/121961696?spm=1001.2101.3001.6650.1&amp;utm_medium=distribute.pc_relevant.none-task-blog-2~default~CTRLIST~Rate-1.pc_relevant_antiscanv2&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2~default~CTRLIST~Rate-1.pc_relevant_antiscanv2&amp;utm_relevant_index=2">https://blog.csdn.net/T_C_Ko/article/details/121961696?spm=1001.2101.3001.6650.1&amp;utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_antiscanv2&amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_antiscanv2&amp;utm_relevant_index=2</a></p>
+<p>EWAP的数据集包括两个sequence：eth和hotel<br>UCY的数据集包括三个sequence：student、univ和zara，还有分zara01，zara02等<br>两个数据集视角为俯视视角的群体行人运动轨迹，目前在开源代码中使用eth数据集的方法往往是采用已经经过预处理脚本的文本文档（抽帧采样计算），文本文档中主要保存了行人ID，帧数，以及坐标位置。<br>数据集图片[]</p>
+<h1 id="模型加载-loader-py"><a href="#模型加载-loader-py" class="headerlink" title="模型加载 (loader.py)"></a>模型加载 (loader.py)</h1><p>Social GAN源码是基于pytorch框架，pytorch的数据加载到模型的操作顺序主要包括一下三步</p>
+<ul>
+<li>创建一个Dataset对象<br>Dataset是一个代表着数据集的抽象类，所有关于数据集的类都可以定义成其子类，只需要重写部分函数即可。<br>①__init__：传入数据，或者直接在函数里加载数据<br>②__len__(self)：返回这个数据集一共有多少个item<br>③__getitem__(self, index)：返回第index条训练数据，并将其转换成tensor<br>而Social GAN中dataset的对象定义写在了trajectories.py中</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">class TrajectoryDataset(Dataset):</span><br><span class="line">    &quot;&quot;&quot;Dataloder for the Trajectory datasets&quot;&quot;&quot;</span><br><span class="line">    def __init__(</span><br><span class="line">    self, data_dir, obs_len=8, pred_len=12, skip=1, threshold=0.002,</span><br><span class="line">    min_ped=1, delim=&#x27;\t&#x27;</span><br><span class="line">    ):</span><br><span class="line">    ...</span><br><span class="line">    def __len__(self):</span><br><span class="line">    ...</span><br><span class="line">    def __getitem__(self, index):</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+<p>用dataset[0]可以调用了上面定义的def <strong>getitem</strong>()那个函数，传入的idx&#x3D;0,也就是取第0个数据。</p>
+<ul>
+<li>创建一个Dataloader对象<br>Dataloader本质是一个可迭代对象，将打包好数据集中一个batch size大小数据，每一步生成一个batch，依次送入网络中用于后面的训练。<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">def data_loader(args, path):</span><br><span class="line">    dset = TrajectoryDataset(</span><br><span class="line">        path,</span><br><span class="line">        obs_len=args.obs_len,</span><br><span class="line">        pred_len=args.pred_len,</span><br><span class="line">        skip=args.skip,</span><br><span class="line">        delim=args.delim)</span><br><span class="line"></span><br><span class="line">    loader = DataLoader(</span><br><span class="line">        dset,                       # TrajectoryDataset准备好的数据集</span><br><span class="line">        batch_size=args.batch_size, # 每个batch中有多少样本官方默认的是64个</span><br><span class="line">        shuffle=True,               # 是否将数据打乱</span><br><span class="line">        num_workers=args.loader_num_workers, # 处理数据加载的进程数</span><br><span class="line">        collate_fn=seq_collate)     # 将一个列表中的样本组成一个mini-batch的函数</span><br><span class="line">    return dset, loader</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>值得注意的是，在定义Dataloader对象中，dataloader按照batch进行取数据的时候, 是取出大小等同于batch size的index列表; 然后将列表列表中的index输入到dataset的getitem()函数中,取出该index对应的数据; 最后, 对每个index对应的数据进行堆叠, 就形成了一个batch的数据。<br>在相应的参数中，collate_fn参数作用是指定整理数据的函数，该函数将一个batch的数据重新打包成要需要的数据格式（加工处理、维度变换），以便送入网络进行训练，如果没有指定，那么在pytorch的源码中collate_fn默认了一个default_collate函数。<br>为了保证输入到LSTM网络的数据格式一致，所以作者在trajectories.py定义了seq_collate函数并赋给collate_fn。<br>传入seq_collate数据，是已经堆叠好的batch个数据，被弄成一个列表list的形式。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">batch = [dataset[0],dataset[1],...,dataset[N]]</span><br></pre></td></tr></table></figure>
+
+<p>参考视频：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Uc2LYM6tIOY8KyxB7aQrOw">https://mp.weixin.qq.com/s/Uc2LYM6tIOY8KyxB7aQrOw</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/bb90bff9f6e5">https://www.jianshu.com/p/bb90bff9f6e5</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/dong_liuqi/article/details/114521240">https://blog.csdn.net/dong_liuqi/article/details/114521240</a></p>
+<ul>
+<li>循环dataloader对象，将data,label拿到模型中去训练</li>
+</ul>
+<h1 id="数据处理部分"><a href="#数据处理部分" class="headerlink" title="数据处理部分"></a>数据处理部分</h1><h2 id="trajectories-py"><a href="#trajectories-py" class="headerlink" title="trajectories.py"></a>trajectories.py</h2><h3 id="读取文件-read-file"><a href="#读取文件-read-file" class="headerlink" title="读取文件 read_file()"></a>读取文件 read_file()</h3><p>原始的数据集共有4列，分为为frame id,ped id,x,y<br>打开_path路径下的文件，将数据每一行按delim分割并转换成flost<br>然后依次加入data list中<br>最终返回一个array数组</p>
+<p>open（）as :<a target="_blank" rel="noopener" href="https://blog.csdn.net/NeverLate_gogogo/article/details/85292663">https://blog.csdn.net/NeverLate_gogogo/article/details/85292663</a></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">def read_file(_path, delim=&#x27;\t&#x27;):</span><br><span class="line">    data = []</span><br><span class="line">    if delim == &#x27;tab&#x27;:</span><br><span class="line">        delim = &#x27;\t&#x27;</span><br><span class="line">    elif delim == &#x27;space&#x27;:</span><br><span class="line">        delim = &#x27; &#x27;</span><br><span class="line">    with open(_path, &#x27;r&#x27;) as f:</span><br><span class="line">        for line in f:</span><br><span class="line">            line = line.strip().split(delim)</span><br><span class="line">            print(line)</span><br><span class="line">            line = [float(i) for i in line]</span><br><span class="line">            data.append(line)</span><br><span class="line">    return np.asarray(data)</span><br></pre></td></tr></table></figure>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/Waitfou/article/details/76342619">https://blog.csdn.net/Waitfou/article/details/76342619</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/haowen11/article/details/107344007">https://blog.csdn.net/haowen11/article/details/107344007</a></p>
+<h3 id="定义轨迹数据集类-TrajectoryDataset-Dataset"><a href="#定义轨迹数据集类-TrajectoryDataset-Dataset" class="headerlink" title="定义轨迹数据集类 TrajectoryDataset(Dataset)"></a>定义轨迹数据集类 TrajectoryDataset(Dataset)</h3><p>__init__传入参数参数及其默认如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">data_dir,           数据集合路径</span><br><span class="line">obs_len=8,          观测轨迹的长度</span><br><span class="line">pred_len=12,        预测轨迹的长度</span><br><span class="line">skip=1,             一个序列中跳过的帧，1在计算中表示不跳过</span><br><span class="line">threshold=0.002,    使用线性预测器时非线性轨迹考虑的最小误差</span><br><span class="line">min_ped=1,          序列中至少出现的人数&gt;min_ped</span><br><span class="line">delim=&#x27;\t&#x27;          读取数据用到的分割符</span><br></pre></td></tr></table></figure>
+
+<p>TrajectoryDataset类的一些参数初始化</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">super(TrajectoryDataset, self).__init__() </span><br><span class="line"># 用Dataset类初始化方法对TrajectoryDataset继承自Dataset的属性进行初始化</span><br><span class="line"></span><br><span class="line">self.data_dir = data_dir</span><br><span class="line">self.obs_len = obs_len</span><br><span class="line">self.pred_len = pred_len</span><br><span class="line">self.skip = skip</span><br><span class="line">self.seq_len = self.obs_len + self.pred_len</span><br><span class="line">self.delim = delim</span><br></pre></td></tr></table></figure>
+
+<p>读取数据集路径</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">all_files = os.listdir(self.data_dir)</span><br><span class="line">all_files = [os.path.join(self.data_dir, _path) for _path in all_files]</span><br></pre></td></tr></table></figure>
+
+<p>接下来定义的是一系列list用于保存进一步处理得到的数据<br>在这之前，需要明确的是Social GAN代码中将20帧(frame)的数据定义成了一个序列(sequence)，数据集中帧id 从0开始:0,10,20…<br>从第0帧开始，依次滑动抽取20帧作为一个序列，即</p>
+<blockquote>
+<p>序列1: [帧00, 帧10, 帧20, …, 帧190]</p>
+<blockquote>
+<p>序列2: [帧10, 帧20, 帧30, …, 帧200]</p>
+<blockquote>
+<p>序列3: [帧20, 帧30, 帧40, …, 帧210]</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">num_peds_in_seq = []        # 一个序列里面出现的所有人id列表</span><br><span class="line">seq_list = []</span><br><span class="line">seq_list_rel = []</span><br><span class="line">loss_mask_list = []</span><br><span class="line">non_linear_ped = []</span><br></pre></td></tr></table></figure>
+
+<p>第一循环表示依次读取出path路径下.txt轨迹文件的内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">data = read_file(path, delim)</span><br><span class="line">frames = np.unique(data[:, 0]).tolist() # 得到数据集帧id 列表[0,10,20,30...]</span><br><span class="line">frame_data = []</span><br><span class="line"># 把同一帧中的所有人的坐标点(一帧中出现的人数 × 4)依次加入frame_data列表中</span><br><span class="line">for frame in frames:</span><br><span class="line">    frame_data.append(data[frame == data[:, 0], :])</span><br></pre></td></tr></table></figure>
+<p>frame_data数据形式如下<br><img src="/SGAN_1/SGAN_1_2022-03-30-14-45-57.png"></p>
+<p>以20帧为一个窗口从第0帧开始滑动，得到数据集中sequences的数目(int)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">num_sequences = int(</span><br><span class="line">    math.ceil((len(frames) - self.seq_len + 1) / skip))</span><br></pre></td></tr></table></figure>
+
+<p>随后进入第二个循环，在每个循环中对frame_data一个sequence的数据在axis&#x3D;0方向上做concatenate，得到curr_seq_data数组<br><img src="/SGAN_1/SGAN_1_2022-03-30-15-03-42.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">for idx in range(0, num_sequences * self.skip + 1, skip):</span><br><span class="line">    # 按序列idx循环</span><br><span class="line">    curr_seq_data = np.concatenate(</span><br><span class="line">        frame_data[idx:idx + self.seq_len], axis=0)</span><br><span class="line">    peds_in_curr_seq = np.unique(curr_seq_data[:, 1]) </span><br><span class="line">    # 一次预测序列中人id[1,2,..]</span><br><span class="line">    curr_seq_rel = np.zeros((len(peds_in_curr_seq), 2,</span><br><span class="line">                            self.seq_len))</span><br><span class="line">    curr_seq = np.zeros((len(peds_in_curr_seq), 2, self.seq_len))</span><br><span class="line">    # (当前序列出现的总人数,2维[[x][y]],轨迹长度)</span><br><span class="line">    curr_loss_mask = np.zeros((len(peds_in_curr_seq),</span><br><span class="line">                            self.seq_len))</span><br></pre></td></tr></table></figure>
+<p>peds_in_curr_seq是一个np.ndarray，表示在第idx序列中出现的所有行人的id数组，例如</p>
+<blockquote>
+<p>idx &#x3D; 0, peds_in_curr_seq &#x3D; [ 1.  2.  3.  4.  5.  6.  7.  8.  9. 10. 11. 12. 13. 14. 15. 16.]<br>idx &#x3D; 4, peds_in_curr_seq &#x3D; [ 3.  4.  5.  6.  7.  8. 11. 12. 13. 14. 15. 16. 17. 18.]</p>
+</blockquote>
+<p>第三个循环里面，对peds_in_curr_seq按出现的行人id数进行循环，通过</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curr_seq_data[:, 1] == ped_id </span><br></pre></td></tr></table></figure>
+<p>抽取第ped_id个行人的坐标<br><img src="/SGAN_1/SGAN_1_2022-03-30-15-24-57.png"><br>通过取[0, 0]和[-1, 0]可以得到该行人第一次出现的帧id和最后一次出现的帧id，作为pad_front和pad_end，二者相减即可得到对应的轨迹长度(出现在画面中的帧数)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">num_peds_considered = 0     # 一个sequence里完整出现20帧的人的个数</span><br><span class="line">_non_linear_ped = []</span><br><span class="line">for _, ped_id in enumerate(peds_in_curr_seq):</span><br><span class="line">    # 依次把一个序列内每个人的轨迹保存为一个数组</span><br><span class="line">    curr_ped_seq = curr_seq_data[curr_seq_data[:, 1] ==</span><br><span class="line">                                    ped_id, :]</span><br><span class="line">    curr_ped_seq = np.around(curr_ped_seq, decimals=4)</span><br><span class="line">    pad_front = frames.index(curr_ped_seq[0, 0]) - idx</span><br><span class="line">    pad_end = frames.index(curr_ped_seq[-1, 0]) - idx + 1</span><br><span class="line">    if pad_end - pad_front != self.seq_len:</span><br><span class="line">        continue</span><br></pre></td></tr></table></figure>
+<p>此外，在此循环中，还进行了一个判断，如果这个人轨迹序列长度小于20，那么就跳过循环(计算该序列中下一个人)，并且在后面的轨迹预测中不考虑这个人的数据信息。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"># 找到一个序列中完整出现20个轨迹点的人</span><br><span class="line">curr_ped_seq = np.transpose(curr_ped_seq[:, 2:])</span><br><span class="line">curr_ped_seq = curr_ped_seq</span><br><span class="line"># Make coordinates relative</span><br><span class="line"># 计算行人在相邻帧下的坐标</span><br><span class="line">rel_curr_ped_seq = np.zeros(curr_ped_seq.shape)</span><br><span class="line">rel_curr_ped_seq[:, 1:] = \</span><br><span class="line">    curr_ped_seq[:, 1:] - curr_ped_seq[:, :-1]</span><br><span class="line">_idx = num_peds_considered</span><br><span class="line"># 前几项为完整轨迹,后面都为0</span><br><span class="line">curr_seq[_idx, :, pad_front:pad_end] = curr_ped_seq</span><br><span class="line">curr_seq_rel[_idx, :, pad_front:pad_end] = rel_curr_ped_seq</span><br><span class="line"></span><br><span class="line"># Linear vs Non-Linear Trajectory</span><br><span class="line"># 判断是否为线性</span><br><span class="line">_non_linear_ped.append(</span><br><span class="line">    poly_fit(curr_ped_seq, pred_len, threshold))</span><br><span class="line">curr_loss_mask[_idx, pad_front:pad_end] = 1</span><br><span class="line">num_peds_considered += 1</span><br></pre></td></tr></table></figure>
+
+<p>这里首先对curr_ped_seq中x,y坐标做了一个转置<br><img src="/SGAN_1/SGAN_1_2022-03-30-15-40-02.png"><br>随后计算行人在相邻帧下的相对坐标rel_curr_ped_seq</p>
+<p>在一个idx循环中，最后主要得到<br>curr_seq，curr_seq_rel，num_peds_considered，_non_linear_ped，curr_loss_mask<br>后面两个参数没有仔细研究</p>
+<blockquote>
+<p>curr_seq: 当前序列中满足轨迹&#x3D;20的行人的坐标数组<br>curr_seq_rel: 当前序列中满足轨迹&#x3D;20的行人的相对坐标数组<br>num_peds_considered: 当前序列中满足轨迹&#x3D;20的人数</p>
+</blockquote>
+<p>由前面的定义可知</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curr_seq_rel = np.zeros((len(peds_in_curr_seq), 2, self.seq_len))</span><br><span class="line">curr_seq = np.zeros((len(peds_in_curr_seq), 2, self.seq_len))</span><br></pre></td></tr></table></figure>
+<p>curr_seq、curr_seq_rel数组的格式大小(该序列出现过的总人数, 坐标维度(2), 序列长度(20))<br>所以curr_seq格式如下：<br><img src="/SGAN_1/SGAN_1_2022-03-30-16-24-41.png"></p>
+<p>进行到此处后，对于第idx个sequence里的轨迹，如果有效的轨迹人数&gt;min_ped，则将对应的curr_seq(非零的坐标点)等参数加入到seq_list.append等之中</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># 如果一个序列中，出现20次的人数&gt;最小人数</span><br><span class="line">if num_peds_considered &gt; min_ped:</span><br><span class="line">    non_linear_ped += _non_linear_ped</span><br><span class="line">    num_peds_in_seq.append(num_peds_considered)</span><br><span class="line">    loss_mask_list.append(curr_loss_mask[:num_peds_considered])</span><br><span class="line">    seq_list.append(curr_seq[:num_peds_considered])</span><br><span class="line">    seq_list_rel.append(curr_seq_rel[:num_peds_considered])</span><br></pre></td></tr></table></figure>
+<p>在这有一点疑问：<br>比如在idx &#x3D; 3这个squence中，有效的轨迹长度是三条，但是在</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">for _, ped_id in enumerate(peds_in_curr_seq):</span><br></pre></td></tr></table></figure>
+<p>循环下，进行到num_peds_considered &#x3D; 2时，就将curr_seq等append进seq_list之中，此时curr_seq没有保存第三个有效轨迹序列的坐标点。<br>然后同样是这个squence，num_peds_considered &#x3D; 3，第三条轨迹被保存到curr_seq同时append进seq_list。<br>不太明白的就是，由于循环的原因，在相同squence下会多次保存轨迹信息进入到seq_list中，后一次会比前一次多一条信息。这样做的目的是为什么呢？<br><img src="/SGAN_1/SGAN_1_2022-03-30-16-46-24.png"></p>
+<p>此时seq_list里面包含了数据集中所有sequence轨迹数据，再对对seq_list做concatenate</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">self.num_seq = len(seq_list)</span><br><span class="line">seq_list = np.concatenate(seq_list, axis=0)</span><br><span class="line">seq_list_rel = np.concatenate(seq_list_rel, axis=0)</span><br><span class="line">loss_mask_list = np.concatenate(loss_mask_list, axis=0)</span><br><span class="line">non_linear_ped = np.asarray(non_linear_ped)</span><br></pre></td></tr></table></figure>
+
+<p>得到如下<br><img src="/SGAN_1/SGAN_1_2022-03-30-16-56-49.png"></p>
+<p>最后对完整的轨迹信息截取，并将numpy数组转化成Tensor</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">self.obs_traj = torch.from_numpy(</span><br><span class="line">    seq_list[:, :, :self.obs_len]).type(torch.float)</span><br><span class="line"># pred_traj:预测轨迹的真值，obs_len后的坐标点</span><br><span class="line">self.pred_traj = torch.from_numpy(</span><br><span class="line">    seq_list[:, :, self.obs_len:]).type(torch.float)</span><br><span class="line"># 是每一帧相对于上一帧的位置变化</span><br><span class="line">self.obs_traj_rel = torch.from_numpy(</span><br><span class="line">    seq_list_rel[:, :, :self.obs_len]).type(torch.float)</span><br><span class="line">self.pred_traj_rel = torch.from_numpy(</span><br><span class="line">    seq_list_rel[:, :, self.obs_len:]).type(torch.float)</span><br><span class="line"># loss_mask:没怎么用</span><br><span class="line">self.loss_mask = torch.from_numpy(loss_mask_list).type(torch.float)</span><br><span class="line"># non_linear_ped:轨迹是否是线性</span><br><span class="line">self.non_linear_ped = torch.from_numpy(non_linear_ped).type(torch.float)</span><br><span class="line">cum_start_idx = [0] + np.cumsum(num_peds_in_seq).tolist()</span><br><span class="line">self.seq_start_end = [</span><br><span class="line">    (start, end)</span><br><span class="line">    for start, end in zip(cum_start_idx, cum_start_idx[1:])</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>self.seq_start_end是一个元组列表，其长度(len(seq_start_end))表示一共有多少满足条件的sequcence，关于它的作用引用一下其他博主的解释</p>
+<blockquote>
+<p>假设在所给数据集中一共有5个序列满足完整出现的人数大于min_ped，且这5个序列分别有2,3,2,4,3个人完整出现，那么self.seq_start_end的长度为5，self.seq_start_end等于[(0,2),(2,5),(5,7),(7,11),(11,14)]，也就是说num_ped&#x3D;14,self.seq_start_end的主要作用是为了以后一个一个序列的分析的方便，即由要分析的序列，即可根据它的值得到对应在这个序列中有哪几个人以及这几个人的所有相关数据。</p>
+</blockquote>
+<p>就是说seq_start_end中的每个元组(start, end)都和一个sequence相对应，作用就是方便从obs_traj_rel等抽取一个sequence中的所有轨迹。具体实现可以见__getitem__函数。</p>
+<p>由于TrajectoryDataset继承至Dataset类，所以其需要重写__getitem__和__len__函数<br>具体如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"># 返回处理后的数据的长度</span><br><span class="line">def __len__(self):</span><br><span class="line">    return self.num_seq</span><br></pre></td></tr></table></figure>
+<p>__len__函数的作用就是得到处理后的数据的长度，在本例中，就是所有满足条件的序列的长度。</p>
+<p>__getitem__函数的作用就是根据索引index返回__init__函数执行后的数据，在本例中就是返回一个数组，它包含一个sequence中轨迹等信息。</p>
+<blockquote>
+<p>如果在类中定义了__getitem__()方法，那么他的实例对象（假设为P）就可以这样P[key]取值。当实例对象做P[key]运算时，就会调用类中的__getitem__()方法。</p>
+</blockquote>
+<p>虽然说seq_list包含了数据集中所有轨迹的信息(按sequence排列)，但是__getitem__()还是按照index，截取一个sequence数据合成Tenser作为out返回。<br><img src="/SGAN_1/SGAN_1_2022-03-30-20-23-16.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 返回__init__函数处理后一个序列的数据，通过getitem传给DataLoader</span><br><span class="line">def __getitem__(self, index):</span><br><span class="line">    start, end = self.seq_start_end[index]</span><br><span class="line">    out = [</span><br><span class="line">        self.obs_traj[start:end, :], self.pred_traj[start:end, :],</span><br><span class="line">        self.obs_traj_rel[start:end, :], self.pred_traj_rel[start:end, :],</span><br><span class="line">        self.non_linear_ped[start:end], self.loss_mask[start:end, :]</span><br><span class="line">    ]</span><br><span class="line">    return out</span><br></pre></td></tr></table></figure>
+
+<p>主要的TrajectoryDataset类讲完后，还有其他函数</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># 拟合判断是否是线性</span><br><span class="line">def poly_fit(traj, traj_len, threshold):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    Input:</span><br><span class="line">    - traj: Numpy array of shape (2, traj_len)</span><br><span class="line">    - traj_len: Len of trajectory</span><br><span class="line">    - threshold: Minimum error to be considered for non linear traj</span><br><span class="line">    Output:</span><br><span class="line">    - int: 1 -&gt; Non Linear 0-&gt; Linear</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    t = np.linspace(0, traj_len - 1, traj_len) # 等差序列的向量t</span><br><span class="line">    res_x = np.polyfit(t, traj[0, -traj_len:], 2, full=True)[1]</span><br><span class="line">    res_y = np.polyfit(t, traj[1, -traj_len:], 2, full=True)[1]</span><br><span class="line">    if res_x + res_y &gt;= threshold:</span><br><span class="line">        return 1.0</span><br><span class="line">    else:</span><br><span class="line">        return 0.0</span><br></pre></td></tr></table></figure>
+<p>poly_fit()在这里不做赘述，只需要知道如果轨迹非线性return 1.0，线性则return 0.0即可。</p>
+<h3 id="Batch样本的处理-seq-collate-data"><a href="#Batch样本的处理-seq-collate-data" class="headerlink" title="Batch样本的处理 seq_collate(data)"></a>Batch样本的处理 seq_collate(data)</h3><p>前面讲了在Dataloader按照Batch进行取数据时，会按照index取出Batch size为一个data列表，collate_fn函数会对样本进行整理重新打包成要需要的数据格式，最后将这个Batch送入网络进行训练。<br>pytorch的源码中collate_fn默认了一个default_collate函数，但是在这里，由于每个sequence中有效轨迹的数目不一致，所以需要整理成统一格式大小，因此这里重写了collate_fn函数。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">def seq_collate(data):</span><br><span class="line">    (obs_seq_list, pred_seq_list, obs_seq_rel_list, pred_seq_rel_list,</span><br><span class="line">     non_linear_ped_list, loss_mask_list) = zip(*data)</span><br><span class="line">    </span><br><span class="line">    _len = [len(seq) for seq in obs_seq_list]</span><br><span class="line">    cum_start_idx = [0] + np.cumsum(_len).tolist()</span><br><span class="line">    seq_start_end = [[start, end]</span><br><span class="line">                     for start, end in zip(cum_start_idx, cum_start_idx[1:])]</span><br></pre></td></tr></table></figure>
+<p>zip(*data)返回的是元组数据，obs_seq_list，pred_seq_list…也是batch_size个数据对应obs_traj，pred_traj…组成的元组。<br>通过len得到所有sequence里轨迹长度组成的列表_len，大小为batch_size，例如</p>
+<blockquote>
+<p>_len &#x3D; [2, 3, 2, 4, 3,….]<br>相应地，此时<br>cum_start_idx &#x3D; [0, 2, 5, 7, 11, 14…]<br>seq_start_end &#x3D; [[0, 2], [2, 5], [5, 7], [7, 11]…]</p>
+</blockquote>
+<p>剩下的主要是根据LSTM的输入方式，做维度变换[N,2,seq_len]→[seq_len,N,2]</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"># Data format: batch, input_size, seq_len</span><br><span class="line"># LSTM input format: seq_len, batch, input_size</span><br><span class="line"></span><br><span class="line">obs_traj = torch.cat(obs_seq_list, dim=0).permute(2, 0, 1)</span><br><span class="line">pred_traj = torch.cat(pred_seq_list, dim=0).permute(2, 0, 1)</span><br><span class="line">obs_traj_rel = torch.cat(obs_seq_rel_list, dim=0).permute(2, 0, 1)</span><br><span class="line">pred_traj_rel = torch.cat(pred_seq_rel_list, dim=0).permute(2, 0, 1)</span><br><span class="line">non_linear_ped = torch.cat(non_linear_ped_list)</span><br><span class="line">loss_mask = torch.cat(loss_mask_list, dim=0)</span><br><span class="line">seq_start_end = torch.LongTensor(seq_start_end)</span><br><span class="line"></span><br><span class="line">out = [</span><br><span class="line">    obs_traj, pred_traj, obs_traj_rel, pred_traj_rel, non_linear_ped,</span><br><span class="line">    loss_mask, seq_start_end</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">return tuple(out)</span><br></pre></td></tr></table></figure>
+<p>例如<br><img src="/SGAN_1/SGAN_1_2022-03-30-20-43-48.png"></p>
+<p>LSTM参数<a target="_blank" rel="noopener" href="https://www.zhangshilong.cn/work/78487.html">https://www.zhangshilong.cn/work/78487.html</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Leon</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2022/03/28/SGAN_1/">http://example.com/2022/03/28/SGAN_1/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">宿松</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Deep-Learning/">Deep Learning</a><a class="post-meta__tags" href="/tags/GAN/">GAN</a></div><div class="post_share"><div class="social-share" data-image="/img/blogtopimg/SGAN.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2022/04/01/SGAN_2/"><img class="prev-cover" src="/img/blogtopimg/SGAN.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Social-GAN 代码解析（二）</div></div></a></div><div class="next-post pull-right"><a href="/2022/03/18/hello/"><img class="next-cover" src="/img/blogtopimg/think.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Hello My Blog</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2022/04/01/SGAN_2/" title="Social-GAN 代码解析（二）"><img class="cover" src="/img/blogtopimg/SGAN.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-04-01</div><div class="title">Social-GAN 代码解析（二）</div></div></a></div></div></div><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="/img/me.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">Leon</div><div class="author-info__description">Home is where you are</div></div><div class="card-info-data is-center"><div class="card-info-data-item"><a href="/archives/"><div class="headline">文章</div><div class="length-num">6</div></a></div><div class="card-info-data-item"><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a></div><div class="card-info-data-item"><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div></div><a id="card-info-btn" href="mailto:jinsong.leon@gmail.com"><i class="fas fa-envelope"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/LeeXiaosong" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="https://www.zhihu.com/people/zhi-ai-mu-ni-hei-zhu" target="_blank" title="Zhihu"><i class="fa-brands fa-zhihu"></i></a><a class="social-icon" href="https://space.bilibili.com/22133996" target="_blank" title="Bilibili"><i class="fa-brands fa-bilibili"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">在安徽<br>有一个地方叫宿松</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%87%86%E5%A4%87"><span class="toc-number">1.</span> <span class="toc-text">数据集准备</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD%E9%97%AE%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">下载问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%8E%8B"><span class="toc-number">1.2.</span> <span class="toc-text">解压</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ETH%E5%92%8CUCY%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="toc-number">1.3.</span> <span class="toc-text">ETH和UCY数据集</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E5%8A%A0%E8%BD%BD-loader-py"><span class="toc-number">2.</span> <span class="toc-text">模型加载 (loader.py)</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E9%83%A8%E5%88%86"><span class="toc-number">3.</span> <span class="toc-text">数据处理部分</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#trajectories-py"><span class="toc-number">3.1.</span> <span class="toc-text">trajectories.py</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6-read-file"><span class="toc-number">3.1.1.</span> <span class="toc-text">读取文件 read_file()</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E8%BD%A8%E8%BF%B9%E6%95%B0%E6%8D%AE%E9%9B%86%E7%B1%BB-TrajectoryDataset-Dataset"><span class="toc-number">3.1.2.</span> <span class="toc-text">定义轨迹数据集类 TrajectoryDataset(Dataset)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Batch%E6%A0%B7%E6%9C%AC%E7%9A%84%E5%A4%84%E7%90%86-seq-collate-data"><span class="toc-number">3.1.3.</span> <span class="toc-text">Batch样本的处理 seq_collate(data)</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2022/04/17/SUN_HP/" title="孙振耀退休感言"><img src="/img/blogtopimg/think.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="孙振耀退休感言"/></a><div class="content"><a class="title" href="/2022/04/17/SUN_HP/" title="孙振耀退休感言">孙振耀退休感言</a><time datetime="2022-04-16T16:00:00.000Z" title="发表于 2022-04-17 00:00:00">2022-04-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/04/01/SGAN_2/" title="Social-GAN 代码解析（二）"><img src="/img/blogtopimg/SGAN.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Social-GAN 代码解析（二）"/></a><div class="content"><a class="title" href="/2022/04/01/SGAN_2/" title="Social-GAN 代码解析（二）">Social-GAN 代码解析（二）</a><time datetime="2022-03-31T16:00:00.000Z" title="发表于 2022-04-01 00:00:00">2022-04-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/03/28/SGAN_1/" title="Social-GAN 代码解析（一）"><img src="/img/blogtopimg/SGAN.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Social-GAN 代码解析（一）"/></a><div class="content"><a class="title" href="/2022/03/28/SGAN_1/" title="Social-GAN 代码解析（一）">Social-GAN 代码解析（一）</a><time datetime="2022-03-27T16:00:00.000Z" title="发表于 2022-03-28 00:00:00">2022-03-28</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/03/18/hello/" title="Hello My Blog"><img src="/img/blogtopimg/think.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Hello My Blog"/></a><div class="content"><a class="title" href="/2022/03/18/hello/" title="Hello My Blog">Hello My Blog</a><time datetime="2022-03-17T16:00:00.000Z" title="发表于 2022-03-18 00:00:00">2022-03-18</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2022/02/01/Markdown_2/" title="Markdown入门（2）"><img src="/img/blogtopimg/markdown.jpeg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Markdown入门（2）"/></a><div class="content"><a class="title" href="/2022/02/01/Markdown_2/" title="Markdown入门（2）">Markdown入门（2）</a><time datetime="2022-01-31T16:00:00.000Z" title="发表于 2022-02-01 00:00:00">2022-02-01</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/blogtopimg/SGAN.png')"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2022 By Leon</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a><br>
+<i class="fa-solid fa-user-check"></i>
+<a href="http://www.beian.miit.gov.cn/" target="_blank">渝ICP备2022003335号</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><div class="js-pjax"><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: '',
+      appKey: '',
+      avatar: 'monsterid',
+      serverURLs: '',
+      emojiMaps: "",
+      path: window.location.pathname,
+      visitor: false
+    }, null))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !false) {
+  if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/gh/metowolf/MetingJS@1.2/dist/Meting.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
